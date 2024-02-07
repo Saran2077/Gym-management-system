@@ -1,0 +1,28 @@
+member:
+    m_id
+    m_name
+    m_age
+    m_contact
+    m_address
+    m_joinDate
+    m_paid
+
+trainer:
+    t_id
+    t_name
+    t_contact
+    t_address
+    t_salary
+
+trainer_assigned:
+    m_id
+    t_id
+    expiry_date
+
+transaction:
+    t_id
+    m_id
+    t_id
+    duration
+    paid_date
+    expiry_date
