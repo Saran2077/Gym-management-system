@@ -4,7 +4,6 @@ class Admin(Connection):
     def __init__(self):
         Connection.__init__(self, database='admin')
 
-
     def gym_details(self):
         details = {
             'location': '',
@@ -53,7 +52,7 @@ class Admin(Connection):
                 if not fee.isdigit():
                     print('Fees should be in integer')
                     continue
-                details['gym_fee'][month+" month" if month == '1' else " months"] = fee
+                details['gym_fee'][month+(" month" if month == '1' else " months")] = fee
                 break
 
             ask = input('Enter y to add fee structure or n to break: ')
@@ -98,19 +97,14 @@ class Admin(Connection):
         print(details)
         return details
 
-
-
-
-
-
-
-
-
     def add_gym(self):
-        g_id = len(self.fetchData(table_name='gym_details')) + 1
-        o_id = len(self.fetchData(table_name='owner_details', columns='*')) + 1
-        gym_details = self.fetchData(table_name='gym_details', columns='GYM_NAME')
-        gym_name = input('Enter the name of the Gym: ')
+        g_id = [g_id[0] for g_id in (self.fetchData(table_name='gym_details'))]
+        o_id = [o_id[0] for o_id in (self.fetchData(table_name='owner_details', columns='o_id'))]
+        gym_details = [gym[0] for gym in self.fetchData(table_name='gym_details', columns='GYM_NAME')]
+        o_id = o_id[-1]+1 if o_id else 1
+        g_id = g_id[-1]+1 if g_id else 1
+        gym_name = input('Enter the name of the Gym: ').lower()
+
         if gym_name in gym_details:
             print('Already Gym name exists...')
             self.add_gym()
@@ -120,32 +114,63 @@ class Admin(Connection):
         else:
             values = self.gym_details()
             if values:
+                self.insert(table_name='gym_details', columns="G_ID, GYM_NAME, GYM_LOCATION", values=f'''{g_id} ,"{gym_name}", "{values['location']}"''')
+                for i in values['gym_fee']:
+                    self.insert(table_name='gym_fee_structure', columns="G_ID, DURATION, FEE", values=f'''{g_id}, '{i}', "{values['gym_fee'][i]}"''')
+                self.insert(table_name='owner_details', columns="O_ID, O_NAME, O_CONTACT, O_ADDRESS, USERNAME, PASSWORD, G_ID", values=f'''{o_id}, "{values['owner_name']}", "{values['owner_contact']}", "{values['owner_address']}", "{values['username']}", "{values['password']}", {g_id}''')
                 self.create_gym(gym_name=gym_name)
-                self.insert(table_name='gym_details', columns="'G_ID', 'GYM_NAME', 'GYM_LOCATION', 'O_ID'", values=f"{g_id} ,'{gym_name}', '{values['location']}', {o_id}")
-                for i in values.gym_fee:
-                    self.insert(table_name='gym_fee_structure', columns="'G_ID', 'DURATION', 'FEE'", values=f"{g_id}, '{i}', {values['gym_fee'][i]}")
-                self.insert(table_name='owner_details', columns="'O_ID', 'O_NAME', 'O_ADDRESS', 'USERNAME', 'PASSWORD'", values=f"{o_id}, '{values['o_name']}', '{values['o_address']}', '{values.username}', '{values.password}'")
+                #ClearScreen
+                print(f'Username: {values["username"]}')
+                print(f'Password: {values["password"]}')
             else:
                 self.add_gym()
 
 
 
     def remove_gym(self):
-        gym_details = self.fetchData(table_name='gym_details', columns='GYM_NAME')
+        gym_details = [gym[0] for gym in self.fetchData(table_name='gym_details', columns='GYM_NAME')]
+        print(gym_details)
         gym_name = input('Enter the name of the Gym to remove: ')
         if gym_name in gym_details:
+            g_id = self.condition_fetch(table_name='gym_details', columns='g_id', condition='GYM_NAME', value=gym_name)[0][0]
+            o_id = self.condition_fetch(table_name='owner_details', columns='o_id', condition='O_ID', value=g_id)[0][0]
+
             self.delete_gym(gym_name=gym_name)
+            self.use_gym(gym_name='admin')
+            self.delete(table_name='gym_fee_structure', columns='g_id', value=g_id)
+            self.delete(table_name='owner_details', columns='o_id', value=o_id)
+            self.delete(table_name='gym_details', columns='g_id', value=g_id)
             print('Successfully removed...')
         elif gym_name.replace(" ", '') == '':
             print("Gym name can't be empty")
-            self.delete_gym()
+            self.remove_gym()
         else:
             print('Enter a valid gym name')
-            self.delete_gym()
+            self.remove_gym()
+
+    def option(self):
+        print("Enter q to back")
+        while True:
+            print("1. Add a Gym")
+            print("2. Remove a Gym")
+            opt = input("Enter a option: ")
+            if opt.lower() == 'q':
+                return
+            if opt.replace(" ","") == "":
+                print("Option can't be empty")
+                self.option()
+            elif not opt.isdigit():
+                print("Option should be in number")
+                self.option()
+            elif int(opt) < 0 or int(opt) > 2:
+                print("Invalid option")
+                self.option()
+            else:
+                if opt == '1':
+                    self.add_gym()
+                elif opt == '2':
+                    self.remove_gym()
 
 
-
-admin = Admin()
-admin.add_gym()
 
 

@@ -1,4 +1,7 @@
 import mysql.connector
+from prettytable import PrettyTable
+
+
 
 class Connection:
 
@@ -32,8 +35,9 @@ class Connection:
         self.create_server_connection.commit()
 
     def insert(self, table_name, columns, values):
-        print(f'INSERT INTO {table_name}({columns}) ({values})')
+        #print(f'INSERT INTO {table_name}({columns}) ({values})')
         self.cursor.execute(f'INSERT INTO {table_name}({columns}) VALUES({values})')
+        self.create_server_connection.commit()
 
 
 
@@ -46,5 +50,17 @@ class Connection:
         data = self.cursor.fetchall()
         return data
 
-conn = Connection()
-# conn.delete_gym('KingFitness')
+    def condition_fetch(self, table_name, columns, condition, value):
+        self.cursor.execute(f'SELECT {columns} from {table_name} WHERE {condition} = "{value}"')
+        data = self.cursor.fetchall()
+        return data
+    def delete(self, table_name, columns, value):
+        #print(f"DELETE FROM {table_name} WHERE {columns} = {value}")
+        self.cursor.execute(f"DELETE FROM {table_name} WHERE {columns} = {value}")
+        self.create_server_connection.commit()
+
+    def prettyPrint(self, column, data):
+        my_Table = PrettyTable(column)
+        for i in data:
+            my_Table.add_row([*i])
+        print(my_Table)
